@@ -36,9 +36,9 @@ def main():
     st.set_page_config(layout="wide")
     st.title('Back Order Follow-up')
     
-    tabs = st.tabs(["Email Settings", "Back Order Follow-up"])
+    tabs = st.tabs([ "Back Order Follow-up","Email Settings"])
     
-    with tabs[0]:
+    with tabs[1]:
         st.header("Email Settings")
         smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
         smtp_port = st.number_input("SMTP Port", value=587, step=1)
@@ -46,7 +46,7 @@ def main():
         smtp_password = st.text_input("SMTP Password", type="password")
         company_name = st.text_input("Your Company Name", value="Your Company")
     
-    with tabs[1]:
+    with tabs[0]:
         uploaded_file = st.file_uploader('Upload CSV', type=['csv'])
         if uploaded_file is not None:
             try:
