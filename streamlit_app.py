@@ -48,17 +48,16 @@ def main():
         email_body = st.text_area("Email Body", value="Dear [Recipient],\n\nWe would like to follow up on the following back orders:\n\n")
     
     with tab1:
-        uploaded_file = st.file_uploader('Upload CSV', type=['csv'])
+        uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
         if uploaded_file is not None:
             try:
-                stringio = StringIO(uploaded_file.getvalue().decode('utf-8'))
-                df = pd.read_csv(stringio)
+                df = pd.read_excel(uploaded_file)
                 st.subheader('Uploaded Data')
                 
                 # Ensure required columns are present
                 required_columns = {'vendor_no', 'email', 'product', 'quantity', 'due_date'}
                 if not required_columns.issubset(df.columns):
-                    st.error(f"CSV is missing required columns: {required_columns - set(df.columns)}")
+                    st.error(f"Excel file is missing required columns: {required_columns - set(df.columns)}")
                     return
                 
                 # Configure AgGrid for multi-selection
