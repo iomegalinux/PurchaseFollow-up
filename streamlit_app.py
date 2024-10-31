@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from io import StringIO
 from st_aggrid import AgGrid, GridOptionsBuilder
 
-def send_emails(grouped_data, smtp_server, smtp_port, smtp_username, smtp_password, company_name, email_subject, email_body, email_col):
+def send_emails(grouped_data, smtp_server, smtp_port, smtp_username, smtp_password, company_name, email_subject, email_body, email_col, product_col, quantity_col, due_date_col):
     for vendor, group in grouped_data:
         # Prepare email content
         message = MIMEMultipart()
@@ -92,7 +92,8 @@ def main():
                         else:
                             send_emails(
                                 grouped, smtp_server, smtp_port, smtp_username, smtp_password,
-                                company_name, email_subject, email_body, email_col
+                                company_name, email_subject, email_body, email_col,
+                                product_col, quantity_col, due_date_col
                             )
                     else:
                         st.warning('Please select at least one row.')
