@@ -6,20 +6,19 @@ from email.mime.multipart import MIMEMultipart
 from io import StringIO
 from st_aggrid import AgGrid, GridOptionsBuilder
 
-def send_emails(grouped_data, smtp_server, smtp_port, smtp_username, smtp_password, company_name):
+def send_emails(grouped_data, smtp_server, smtp_port, smtp_username, smtp_password, company_name, email_subject, email_body):
     for vendor, group in grouped_data:
         # Prepare email content
         message = MIMEMultipart()
         message['From'] = smtp_username
         message['To'] = ', '.join(group['email'].unique())
-        message['Subject'] = 'Back Order Follow-up'
+        message['Subject'] = email_subject
         
-        body = f'Dear Vendor {vendor},\n\nWe would like to follow up on the following back orders:\n\n'
-        for index, row in group.iterrows():
-            body += f"- Product: {row['product']}, Quantity: {row['quantity']}, Due Date: {row['due_date']}\n"
-        body += f'\nPlease address these issues at your earliest convenience.\n\nBest regards,\n{company_name}'
+        personalized_body = email_body.replace("[Recipient]", ', '.join(group['email'].unique()))
+        rows_text = group.to_string(index=False)
+        full_email_body = f"{personalized_body}\n\n{rows_text}"
         
-        message.attach(MIMEText(body, 'plain'))
+        message.attach(MIMEText(full_email_body, 'plain'))
         
         # Send the email
         try:
@@ -36,17 +35,19 @@ def main():
     st.set_page_config(layout="wide")
     st.title('Back Order Follow-up')
     
-    tabs = st.tabs([ "Back Order Follow-up","Email Settings"])
+    tab1, tab2 = st.tabs(["Data Input", "Email Settings"])
     
-    with tabs[1]:
-        st.header("Email Settings")
+    with tab2:
+        st.header("Email Configuration")
         smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
         smtp_port = st.number_input("SMTP Port", value=587, step=1)
         smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
         smtp_password = st.text_input("SMTP Password", type="password")
         company_name = st.text_input("Your Company Name", value="Your Company")
+        email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
+        email_body = st.text_area("Email Body", value="Dear [Recipient],\n\nWe would like to follow up on the following back orders:\n\n")
     
-    with tabs[0]:
+    with tab1:
         uploaded_file = st.file_uploader('Upload CSV', type=['csv'])
         if uploaded_file is not None:
             try:
@@ -83,7 +84,7 @@ def main():
                         if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
                             st.error("Please provide all email settings in the Email Settings tab.")
                         else:
-                            send_emails(grouped, smtp_server, smtp_port, smtp_username, smtp_password, company_name)
+                            send_emails(grouped, smtp_server, smtp_port, smtp_username, smtp_password, company_name, email_subject, email_body)
                     else:
                         st.warning('Please select at least one row.')
             except Exception as e:
