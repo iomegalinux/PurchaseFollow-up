@@ -56,15 +56,14 @@ def main():
     tab1, tab2 = st.tabs(["Data Input", "Email Settings"])
     
     with tab2:
-        with st.expander('Email Configuration'):
-            st.header("Email Configuration")
+        st.header("Email Configuration")
 
-            with st.expander('SMTP Settings'):
-                smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
-                smtp_port = st.number_input("SMTP Port", value=587, step=1)
-                smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-                smtp_password = st.text_input("SMTP Password", type="password")
-                company_name = st.text_input("Your Company Name", value="Your Company")
+        with st.expander('SMTP Settings'):
+            smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+            smtp_port = st.number_input("SMTP Port", value=587, step=1)
+            smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
+            smtp_password = st.text_input("SMTP Password", type="password")
+            company_name = st.text_input("Your Company Name", value="Your Company")
 
         with st.expander('Email Content'):
             email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
@@ -74,6 +73,8 @@ def main():
             )
     
     with tab1:
+        st.header("Data Input")
+        
         with st.expander('Upload Data Files'):
             uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
             vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
