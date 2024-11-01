@@ -113,110 +113,95 @@ def main():
                 st.error("Please select all required columns in the 'Map Vendor Information Columns' section.")
                 return
 
-    with tab2:
-        st.header("Email Configuration")
+            # Convert key columns to string to ensure consistent data types
+            df[vendor_col] = df[vendor_col].astype(str)
+            vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
 
-        with st.expander('SMTP Settings'):
-            smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
-            smtp_port = st.number_input("SMTP Port", value=587, step=1)
-            smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-            smtp_password = st.text_input("SMTP Password", type="password")
-            company_name = st.text_input("Your Company Name", value="Your Company")
-
-        with st.expander('Email Content'):
-            email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
-            email_body = st.text_area(
-                "Email Body",
-                value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n"
+            # Merge the DataFrames on the vendor number with suffixes for overlapping columns
+            merged_df = pd.merge(
+                df,
+                vendor_df,
+                left_on=vendor_col,
+                right_on=vendor_no_col_vendor,
+                how='left',
+                suffixes=('_main', '_vendor')
             )
 
-        # Convert key columns to string to ensure consistent data types
-        df[vendor_col] = df[vendor_col].astype(str)
-        vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
+            # Update column variable names based on whether they have suffixes
+            vendor_col_main = vendor_col  # No suffix needed if not overlapping
+            product_col_main = product_col
+            quantity_col_main = quantity_col
+            due_date_col_main = due_date_col
 
-        # Merge the DataFrames on the vendor number with suffixes for overlapping columns
-        merged_df = pd.merge(
-            df,
-            vendor_df,
-            left_on=vendor_col,
-            right_on=vendor_no_col_vendor,
-            how='left',
-            suffixes=('_main', '_vendor')
-        )
+            # Check if any columns have suffixes due to overlap
+            vendor_name_col_vendor = vendor_name_col
+            if vendor_name_col in df.columns and vendor_name_col in vendor_df.columns:
+                vendor_name_col_vendor += '_vendor'
 
-        # Update column variable names based on whether they have suffixes
-        vendor_col_main = vendor_col  # No suffix needed if not overlapping
-        product_col_main = product_col
-        quantity_col_main = quantity_col
-        due_date_col_main = due_date_col
+            email_col_vendor = vendor_email_col
+            if vendor_email_col in df.columns and vendor_email_col in vendor_df.columns:
+                email_col_vendor += '_vendor'
 
-        # Check if any columns have suffixes due to overlap
-        vendor_name_col_vendor = vendor_name_col
-        if vendor_name_col in df.columns and vendor_name_col in vendor_df.columns:
-            vendor_name_col_vendor += '_vendor'
+            contact_col_vendor = contact_col
+            if contact_col in df.columns and contact_col in vendor_df.columns:
+                contact_col_vendor += '_vendor'
 
-        email_col_vendor = vendor_email_col
-        if vendor_email_col in df.columns and vendor_email_col in vendor_df.columns:
-            email_col_vendor += '_vendor'
+            # Create a display DataFrame with all columns from the merged dataframe
+            display_df = merged_df.copy()
 
-        contact_col_vendor = contact_col
-        if contact_col in df.columns and contact_col in vendor_df.columns:
-            contact_col_vendor += '_vendor'
+            # Check for duplicate columns in display_df
+            duplicated_columns = display_df.columns[display_df.columns.duplicated()].tolist()
+            if duplicated_columns:
+                # Identify the sources of the duplicate columns
+                duplicate_details = []
+                for col in duplicated_columns:
+                    sources = []
+                    if col in df.columns:
+                        sources.append("Main Data")
+                    if col in vendor_df.columns:
+                        sources.append("Vendor Information")
+                    duplicate_details.append(f"- '{col}' selected from: {', '.join(sources)}")
+                
+                st.error("You have selected duplicate columns, resulting in duplicate names in the display.")
+                st.write("Duplicate columns and their sources:")
+                for detail in duplicate_details:
+                    st.write(detail)
+                st.stop()
 
-        # Create a display DataFrame with all columns from the merged dataframe
-        display_df = merged_df.copy()
+            # Configure AgGrid for multi-selection
+            gb = GridOptionsBuilder.from_dataframe(display_df)
+            gb.configure_selection('multiple', use_checkbox=True)
+            grid_options = gb.build()
 
-        # Check for duplicate columns in display_df
-        duplicated_columns = display_df.columns[display_df.columns.duplicated()].tolist()
-        if duplicated_columns:
-            # Identify the sources of the duplicate columns
-            duplicate_details = []
-            for col in duplicated_columns:
-                sources = []
-                if col in df.columns:
-                    sources.append("Main Data")
-                if col in vendor_df.columns:
-                    sources.append("Vendor Information")
-                duplicate_details.append(f"- '{col}' selected from: {', '.join(sources)}")
-            
-            st.error("You have selected duplicate columns, resulting in duplicate names in the display.")
-            st.write("Duplicate columns and their sources:")
-            for detail in duplicate_details:
-                st.write(detail)
-            st.stop()
+            # Display the data in AgGrid
+            grid_response = AgGrid(
+                display_df,
+                gridOptions=grid_options,
+                height=500,  # Set the desired height in pixels
+                enable_enterprise_modules=False,
+                allow_unsafe_jscode=True,
+                update_mode='MODEL_CHANGED'
+            )
 
-        # Configure AgGrid for multi-selection
-        gb = GridOptionsBuilder.from_dataframe(display_df)
-        gb.configure_selection('multiple', use_checkbox=True)
-        grid_options = gb.build()
+            selected = grid_response['selected_rows']
+            selected_df = pd.DataFrame(selected)
 
-        # Display the data in AgGrid
-        grid_response = AgGrid(
-            display_df,
-            gridOptions=grid_options,
-            height=500,  # Set the desired height in pixels
-            enable_enterprise_modules=False,
-            allow_unsafe_jscode=True,
-            update_mode='MODEL_CHANGED'
-        )
-
-        selected = grid_response['selected_rows']
-        selected_df = pd.DataFrame(selected)
-
-        if st.button('Follow-up'):
-            if not selected_df.empty:
-                grouped = selected_df.groupby(vendor_col_main)
-                # Validate email settings
-                if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
-                    st.error("Please provide all email settings in the Email Settings tab.")
+            if st.button('Follow-up'):
+                if not selected_df.empty:
+                    grouped = selected_df.groupby(vendor_col_main)
+                    # Validate email settings
+                    if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
+                        st.error("Please provide all email settings in the Email Settings tab.")
+                    else:
+                        send_emails(
+                            grouped, smtp_server, smtp_port, smtp_username, smtp_password,
+                            company_name, email_subject, email_body, email_col_vendor,
+                            product_col_main, quantity_col_main, due_date_col_main, contact_col_vendor, vendor_name_col_vendor
+                        )
                 else:
-                    send_emails(
-                        grouped, smtp_server, smtp_port, smtp_username, smtp_password,
-                        company_name, email_subject, email_body, email_col_vendor,
-                        product_col_main, quantity_col_main, due_date_col_main, contact_col_vendor, vendor_name_col_vendor
-                    )
-            else:
-                st.warning('Please select at least one row.')
+                    st.warning('Please select at least one row.')
+        else:
+            st.warning("Please upload both the main data file and the vendor information file.")
 
 if __name__ == '__main__':
     main()
