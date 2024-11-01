@@ -220,7 +220,7 @@ def main():
             
             # Add this conditional check
             if 'office365.com' in smtp_server:
-                st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the email settings.")
+                st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the smtp password email settings.")
             smtp_port = st.number_input("SMTP Port", value=587, step=1)
             smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
             smtp_password = st.text_input("SMTP Password", type="password")
