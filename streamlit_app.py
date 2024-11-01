@@ -86,7 +86,7 @@ def main():
             st.error(f"Error processing the uploaded files: {e}")
             return
 
-        with st.expander('Map Columns'):
+        with st.expander('BackOrder information Map Columns'):
             columns = df.columns.tolist()
             email_col = st.selectbox('Select the Email Column', options=columns, index=columns.index('email') if 'email' in columns else 0)
             vendor_col = st.selectbox('Select the Vendor Number Column', options=columns, index=columns.index('vendor_no') if 'vendor_no' in columns else 0)
@@ -160,18 +160,8 @@ def main():
         if contact_col in df.columns and contact_col in vendor_df.columns:
             contact_col_vendor += '_vendor'
 
-        # Create a display DataFrame with updated column names
-        display_df = merged_df[
-            [
-                vendor_col_main,        # Vendor number from main data
-                product_col_main,       # Assume product_col is unique
-                quantity_col_main,      # Assume quantity_col is unique
-                due_date_col_main,      # Assume due_date_col is unique
-                vendor_name_col_vendor, # Vendor name from vendor data
-                email_col_vendor,       # Email from vendor data
-                contact_col_vendor      # Contact from vendor data
-            ]
-        ].copy()
+        # Create a display DataFrame with all columns from the merged dataframe
+        display_df = merged_df.copy()
 
         # Check for duplicate columns in display_df
         duplicated_columns = display_df.columns[display_df.columns.duplicated()].tolist()
