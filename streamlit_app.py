@@ -200,8 +200,22 @@ def main():
                         )
                 else:
                     st.warning('Please select at least one row.')
-        else:
-            st.warning("Please upload both the main data file and the vendor information file.")
+    with tab2:
+        st.header("Email Configuration")
+
+        with st.expander('SMTP Settings'):
+            smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+            smtp_port = st.number_input("SMTP Port", value=587, step=1)
+            smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
+            smtp_password = st.text_input("SMTP Password", type="password")
+            company_name = st.text_input("Your Company Name", value="Your Company")
+
+        with st.expander('Email Content'):
+            email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
+            email_body = st.text_area(
+                "Email Body",
+                value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n"
+            )
 
 if __name__ == '__main__':
     main()
