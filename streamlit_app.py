@@ -60,11 +60,11 @@ def main():
             st.header("Email Configuration")
 
             with st.expander('SMTP Settings'):
-            smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
-            smtp_port = st.number_input("SMTP Port", value=587, step=1)
-            smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-            smtp_password = st.text_input("SMTP Password", type="password")
-            company_name = st.text_input("Your Company Name", value="Your Company")
+                smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+                smtp_port = st.number_input("SMTP Port", value=587, step=1)
+                smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
+                smtp_password = st.text_input("SMTP Password", type="password")
+                company_name = st.text_input("Your Company Name", value="Your Company")
 
         with st.expander('Email Content'):
             email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
