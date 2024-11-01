@@ -56,9 +56,10 @@ def main():
     tab1, tab2 = st.tabs(["Data Input", "Email Settings"])
     
     with tab2:
-        st.header("Email Configuration")
+        with st.expander('Email Configuration'):
+            st.header("Email Configuration")
 
-        with st.expander('SMTP Settings'):
+            with st.expander('SMTP Settings'):
             smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
             smtp_port = st.number_input("SMTP Port", value=587, step=1)
             smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
@@ -73,8 +74,9 @@ def main():
             )
     
     with tab1:
-        uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
-        vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
+        with st.expander('Upload Data Files'):
+            uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
+            vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
         
     # Proceed only if both files are uploaded
     if uploaded_file is not None and vendor_file is not None:
@@ -191,6 +193,7 @@ def main():
         grid_response = AgGrid(
             display_df,
             gridOptions=grid_options,
+            height=500,  # Set the desired height in pixels
             enable_enterprise_modules=False,
             allow_unsafe_jscode=True,
             update_mode='MODEL_CHANGED'
