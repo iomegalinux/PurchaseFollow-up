@@ -131,20 +131,34 @@ def main():
         df[vendor_col] = df[vendor_col].astype(str)
         vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
 
-        # Merge the DataFrames on the vendor number
+        # Merge the DataFrames on the vendor number with suffixes
         merged_df = pd.merge(
             df,
             vendor_df,
             left_on=vendor_col,         # Vendor number column from the main data
             right_on=vendor_no_col_vendor,  # Vendor number column from the vendor info
-            how='left'
+            how='left',
+            suffixes=('_main', '_vendor')
         )
 
-        # Update the email column to use the vendor email from the merged DataFrame
-        email_col = vendor_email_col
+        # Update column names with suffixes
+        vendor_col_main = f"{vendor_col}_main"
+        email_col_vendor = f"{vendor_email_col}_vendor"
+        contact_col_vendor = f"{contact_col}_vendor"
+        vendor_name_col_vendor = f"{vendor_name_col}_vendor"
 
-        # Create a display DataFrame with relevant columns
-        display_df = merged_df[[vendor_col, product_col, quantity_col, due_date_col, vendor_name_col, email_col, contact_col]].copy()
+        # Create a display DataFrame with updated column names
+        display_df = merged_df[
+            [
+                vendor_col_main,        # Vendor number from main data
+                product_col,            # Assume product_col is unique
+                quantity_col,           # Assume quantity_col is unique
+                due_date_col,           # Assume due_date_col is unique
+                vendor_name_col_vendor, # Vendor name from vendor data
+                email_col_vendor,       # Email from vendor data
+                contact_col_vendor      # Contact from vendor data
+            ]
+        ].copy()
 
         # Configure AgGrid for multi-selection
         gb = GridOptionsBuilder.from_dataframe(display_df)
@@ -165,15 +179,15 @@ def main():
 
         if st.button('Follow-up'):
             if not selected_df.empty:
-                grouped = selected_df.groupby(vendor_col)
+                grouped = selected_df.groupby(vendor_col_main)
                 # Validate email settings
                 if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
                     st.error("Please provide all email settings in the Email Settings tab.")
                 else:
                     send_emails(
                         grouped, smtp_server, smtp_port, smtp_username, smtp_password,
-                        company_name, email_subject, email_body, email_col,
-                        product_col, quantity_col, due_date_col, contact_col, vendor_name_col
+                        company_name, email_subject, email_body, email_col_vendor,
+                        product_col, quantity_col, due_date_col, contact_col_vendor, vendor_name_col_vendor
                     )
             else:
                 st.warning('Please select at least one row.')
