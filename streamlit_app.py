@@ -217,8 +217,8 @@ def main():
                     )
             else:
                 st.warning('Please select at least one row.')
-    else:
-        st.warning("Please upload both the main data file and the vendor information file.")
+        else:
+            st.warning("Please upload both the main data file and the vendor information file.")
 
 if __name__ == '__main__':
     main()
