@@ -133,27 +133,30 @@ def main():
 
         # Merge the DataFrames on the vendor number with suffixes
         merged_df = pd.merge(
-            df,
-            vendor_df,
-            left_on=vendor_col,         # Vendor number column from the main data
-            right_on=vendor_no_col_vendor,  # Vendor number column from the vendor info
-            how='left',
-            suffixes=('_main', '_vendor')
+            df.add_suffix('_main'),
+            vendor_df.add_suffix('_vendor'),
+            left_on=f'{vendor_col}_main',
+            right_on=f'{vendor_no_col_vendor}_vendor',
+            how='left'
         )
 
         # Update column names with suffixes
-        vendor_col_main = f"{vendor_col}_main"
-        email_col_vendor = f"{vendor_email_col}_vendor"
-        contact_col_vendor = f"{contact_col}_vendor"
-        vendor_name_col_vendor = f"{vendor_name_col}_vendor"
+        vendor_col_main = f'{vendor_col}_main'
+        product_col_main = f'{product_col}_main'
+        quantity_col_main = f'{quantity_col}_main'
+        due_date_col_main = f'{due_date_col}_main'
+
+        vendor_name_col_vendor = f'{vendor_name_col}_vendor'
+        email_col_vendor = f'{vendor_email_col}_vendor'
+        contact_col_vendor = f'{contact_col}_vendor'
 
         # Create a display DataFrame with updated column names
         display_df = merged_df[
             [
                 vendor_col_main,        # Vendor number from main data
-                product_col,            # Assume product_col is unique
-                quantity_col,           # Assume quantity_col is unique
-                due_date_col,           # Assume due_date_col is unique
+                product_col_main,       # Assume product_col is unique
+                quantity_col_main,      # Assume quantity_col is unique
+                due_date_col_main,      # Assume due_date_col is unique
                 vendor_name_col_vendor, # Vendor name from vendor data
                 email_col_vendor,       # Email from vendor data
                 contact_col_vendor      # Contact from vendor data
@@ -187,7 +190,7 @@ def main():
                     send_emails(
                         grouped, smtp_server, smtp_port, smtp_username, smtp_password,
                         company_name, email_subject, email_body, email_col_vendor,
-                        product_col, quantity_col, due_date_col, contact_col_vendor, vendor_name_col_vendor
+                        product_col_main, quantity_col_main, due_date_col_main, contact_col_vendor, vendor_name_col_vendor
                     )
             else:
                 st.warning('Please select at least one row.')
