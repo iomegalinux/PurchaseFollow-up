@@ -76,16 +76,15 @@ def main():
         uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
         vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
         
-        # Check if both files are uploaded
-        if uploaded_file is not None and vendor_file is not None:
-            try:
-                # Read the main data file without headers to inspect
-                df = pd.read_excel(uploaded_file, header=None, index_col=None)
-                df = pd.read_excel(uploaded_file, header=0, index_col=None)
-                vendor_df = pd.read_excel(vendor_file, header=0, index_col=None)
-            except Exception as e:
-                st.error(f"Error processing the uploaded files: {e}")
-                return
+    # Proceed only if both files are uploaded
+    if uploaded_file is not None and vendor_file is not None:
+        try:
+            # Read the main data file
+            df = pd.read_excel(uploaded_file, header=0, index_col=None)
+            vendor_df = pd.read_excel(vendor_file, header=0, index_col=None)
+        except Exception as e:
+            st.error(f"Error processing the uploaded files: {e}")
+            return
 
         with st.expander('Map Columns'):
             columns = df.columns.tolist()
@@ -95,21 +94,12 @@ def main():
             quantity_col = st.selectbox('Select the Quantity Column', options=columns, index=columns.index('quantity') if 'quantity' in columns else 0)
             due_date_col = st.selectbox('Select the Due Date Column', options=columns, index=columns.index('due_date') if 'due_date' in columns else 0)
 
-        if not all([
-                email_col,
-                vendor_col,
-                product_col,
-                quantity_col,
-                due_date_col
-            ]):
-            st.error("Please select all required columns in both 'Map Columns' sections.")
+        if not all([email_col, vendor_col, product_col, quantity_col, due_date_col]):
+            st.error("Please select all required columns in the 'Map Columns' section.")
             return
 
         with st.expander('Map Vendor Information Columns'):
-            # Get the list of columns from the vendor DataFrame
             vendor_columns = vendor_df.columns.tolist()
-
-            # Add select boxes for mapping vendor information columns
             vendor_no_col_vendor = st.selectbox(
                 'Select the Vendor Number Column in Vendor Information File',
                 options=vendor_columns,
@@ -133,17 +123,62 @@ def main():
                 index=vendor_columns.index('contact') if 'contact' in vendor_columns else 0
             )
 
-        # Ensure all vendor columns have been selected
         if not all([vendor_no_col_vendor, vendor_name_col, vendor_email_col, contact_col]):
             st.error("Please select all required columns in the 'Map Vendor Information Columns' section.")
             return
 
-            # Convert key columns to string to ensure consistent data types
-            df[vendor_col] = df[vendor_col].astype(str)
-            vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
-        else:
-            st.warning("Please upload both the main data file and the vendor information file.")
-            return
+        # Convert key columns to string to ensure consistent data types
+        df[vendor_col] = df[vendor_col].astype(str)
+        vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
+
+        # Merge the DataFrames on the vendor number
+        merged_df = pd.merge(
+            df,
+            vendor_df,
+            left_on=vendor_col,         # Vendor number column from the main data
+            right_on=vendor_no_col_vendor,  # Vendor number column from the vendor info
+            how='left'
+        )
+
+        # Update the email column to use the vendor email from the merged DataFrame
+        email_col = vendor_email_col
+
+        # Create a display DataFrame with relevant columns
+        display_df = merged_df[[vendor_col, product_col, quantity_col, due_date_col, vendor_name_col, email_col, contact_col]].copy()
+
+        # Configure AgGrid for multi-selection
+        gb = GridOptionsBuilder.from_dataframe(display_df)
+        gb.configure_selection('multiple', use_checkbox=True)
+        grid_options = gb.build()
+
+        # Display the data in AgGrid
+        grid_response = AgGrid(
+            display_df,
+            gridOptions=grid_options,
+            enable_enterprise_modules=False,
+            allow_unsafe_jscode=True,
+            update_mode='MODEL_CHANGED'
+        )
+
+        selected = grid_response['selected_rows']
+        selected_df = pd.DataFrame(selected)
+
+        if st.button('Follow-up'):
+            if not selected_df.empty:
+                grouped = selected_df.groupby(vendor_col)
+                # Validate email settings
+                if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
+                    st.error("Please provide all email settings in the Email Settings tab.")
+                else:
+                    send_emails(
+                        grouped, smtp_server, smtp_port, smtp_username, smtp_password,
+                        company_name, email_subject, email_body, email_col,
+                        product_col, quantity_col, due_date_col, contact_col, vendor_name_col
+                    )
+            else:
+                st.warning('Please select at least one row.')
+    else:
+        st.warning("Please upload both the main data file and the vendor information file.")
 
         with st.expander('Map Columns'):
             columns = df.columns.tolist()
