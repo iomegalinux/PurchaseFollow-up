@@ -76,9 +76,14 @@ def main():
         if uploaded_file is not None and vendor_file is not None:
             try:
                 # Read the main data file
-                df = pd.read_excel(uploaded_file)
-                # Read the vendor information file
-                vendor_df = pd.read_excel(vendor_file)
+                # Read the main data file with headers
+                df = pd.read_excel(uploaded_file, header=0, index_col=None)
+                # Read the vendor information file with headers
+                vendor_df = pd.read_excel(vendor_file, header=0, index_col=None)
+                
+                # Verify the columns
+                st.write("Main DataFrame columns:", df.columns.tolist())
+                st.write("Vendor DataFrame columns:", vendor_df.columns.tolist())
             except Exception as e:
                 st.error(f"Error processing the uploaded files: {e}")
                 return
