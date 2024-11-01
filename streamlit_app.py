@@ -62,6 +62,15 @@ def main():
             uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
             vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
         
+        # Initialize email settings variables
+        smtp_server = None
+        smtp_port = None
+        smtp_username = None
+        smtp_password = None
+        company_name = None
+        email_subject = None
+        email_body = None
+
         # Proceed only if both files are uploaded
         if uploaded_file is not None and vendor_file is not None:
             try:
@@ -200,6 +209,9 @@ def main():
                         )
                 else:
                     st.warning('Please select at least one row.')
+        else:
+            st.warning("Please upload both the main data file and the vendor information file.")
+
     with tab2:
         st.header("Email Configuration")
 
