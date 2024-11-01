@@ -95,19 +95,15 @@ def main():
         quantity_col = st.selectbox('Select the Quantity Column', options=columns, index=columns.index('quantity') if 'quantity' in columns else 0)
         due_date_col = st.selectbox('Select the Due Date Column', options=columns, index=columns.index('due_date') if 'due_date' in columns else 0)
 
-                if not all([
-                    email_col,
-                    vendor_col,
-                    product_col,
-                    quantity_col,
-                    due_date_col,
-                    vendor_no_col_vendor,
-                    vendor_name_col,
-                    vendor_email_col,
-                    contact_col
-                ]):
-                    st.error("Please select all required columns in both 'Map Columns' sections.")
-                    return
+        if not all([
+            email_col,
+            vendor_col,
+            product_col,
+            quantity_col,
+            due_date_col
+        ]):
+            st.error("Please select all required columns in both 'Map Columns' sections.")
+            return
 
                 st.subheader('Map Vendor Information Columns')
 
