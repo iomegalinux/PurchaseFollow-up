@@ -88,12 +88,12 @@ def main():
 
         st.subheader('Map Columns')
 
-                columns = df.columns.tolist()
-                email_col = st.selectbox('Select the Email Column', options=columns, index=columns.index('email') if 'email' in columns else 0)
-                vendor_col = st.selectbox('Select the Vendor Number Column', options=columns, index=columns.index('vendor_no') if 'vendor_no' in columns else 0)
-                product_col = st.selectbox('Select the Product Column', options=columns, index=columns.index('product') if 'product' in columns else 0)
-                quantity_col = st.selectbox('Select the Quantity Column', options=columns, index=columns.index('quantity') if 'quantity' in columns else 0)
-                due_date_col = st.selectbox('Select the Due Date Column', options=columns, index=columns.index('due_date') if 'due_date' in columns else 0)
+        columns = df.columns.tolist()
+        email_col = st.selectbox('Select the Email Column', options=columns, index=columns.index('email') if 'email' in columns else 0)
+        vendor_col = st.selectbox('Select the Vendor Number Column', options=columns, index=columns.index('vendor_no') if 'vendor_no' in columns else 0)
+        product_col = st.selectbox('Select the Product Column', options=columns, index=columns.index('product') if 'product' in columns else 0)
+        quantity_col = st.selectbox('Select the Quantity Column', options=columns, index=columns.index('quantity') if 'quantity' in columns else 0)
+        due_date_col = st.selectbox('Select the Due Date Column', options=columns, index=columns.index('due_date') if 'due_date' in columns else 0)
 
                 if not all([
                     email_col,
