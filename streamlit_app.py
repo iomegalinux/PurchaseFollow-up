@@ -75,9 +75,14 @@ def main():
         # Check if both files are uploaded
         if uploaded_file is not None and vendor_file is not None:
             try:
-                # Read the main data file
-                # Read the main data file with headers
-                df = pd.read_excel(uploaded_file, header=0, index_col=None)
+                # Read the main data file without headers to inspect
+                df = pd.read_excel(uploaded_file, header=None, index_col=None)
+                st.write("Main DataFrame preview:")
+                st.write(df.head())
+
+                # Identify header row
+                header_row = st.number_input("Enter the row number where headers are located in the Main Data File (starting from 0)", min_value=0, value=0)
+                df = pd.read_excel(uploaded_file, header=header_row, index_col=None)
                 # Read the vendor information file with headers
                 vendor_df = pd.read_excel(vendor_file, header=0, index_col=None)
                 
