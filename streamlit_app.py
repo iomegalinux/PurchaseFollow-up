@@ -174,9 +174,22 @@ def main():
         ].copy()
 
         # Check for duplicate columns in display_df
-        if display_df.columns.duplicated().any():
-            st.error("Duplicate column names detected in 'display_df'.")
-            st.write("Duplicate columns:", display_df.columns[display_df.columns.duplicated()].tolist())
+        duplicated_columns = display_df.columns[display_df.columns.duplicated()].tolist()
+        if duplicated_columns:
+            # Identify the sources of the duplicate columns
+            duplicate_details = []
+            for col in duplicated_columns:
+                sources = []
+                if col in df.columns:
+                    sources.append("Main Data")
+                if col in vendor_df.columns:
+                    sources.append("Vendor Information")
+                duplicate_details.append(f"- '{col}' selected from: {', '.join(sources)}")
+            
+            st.error("You have selected duplicate columns, resulting in duplicate names in the display.")
+            st.write("Duplicate columns and their sources:")
+            for detail in duplicate_details:
+                st.write(detail)
             st.stop()
 
         # Configure AgGrid for multi-selection
