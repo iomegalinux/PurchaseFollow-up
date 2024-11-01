@@ -141,9 +141,9 @@ def main():
         # Convert key columns to string to ensure consistent data types
         df[vendor_col] = df[vendor_col].astype(str)
         vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
-        else:
-            st.warning("Please upload both the main data file and the vendor information file.")
-            return
+    else:
+        st.warning("Please upload both the main data file and the vendor information file.")
+        return
 
         with st.expander('Map Columns'):
             columns = df.columns.tolist()
