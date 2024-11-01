@@ -131,24 +131,34 @@ def main():
         df[vendor_col] = df[vendor_col].astype(str)
         vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
 
-        # Merge the DataFrames on the vendor number with suffixes
+        # Merge the DataFrames on the vendor number with suffixes for overlapping columns
         merged_df = pd.merge(
-            df.add_suffix('_main'),
-            vendor_df.add_suffix('_vendor'),
-            left_on=f'{vendor_col}_main',
-            right_on=f'{vendor_no_col_vendor}_vendor',
-            how='left'
+            df,
+            vendor_df,
+            left_on=vendor_col,
+            right_on=vendor_no_col_vendor,
+            how='left',
+            suffixes=('_main', '_vendor')
         )
 
-        # Update column names with suffixes
-        vendor_col_main = f'{vendor_col}_main'
-        product_col_main = f'{product_col}_main'
-        quantity_col_main = f'{quantity_col}_main'
-        due_date_col_main = f'{due_date_col}_main'
+        # Update column variable names based on whether they have suffixes
+        vendor_col_main = vendor_col  # No suffix needed if not overlapping
+        product_col_main = product_col
+        quantity_col_main = quantity_col
+        due_date_col_main = due_date_col
 
-        vendor_name_col_vendor = f'{vendor_name_col}_vendor'
-        email_col_vendor = f'{vendor_email_col}_vendor'
-        contact_col_vendor = f'{contact_col}_vendor'
+        # Check if any columns have suffixes due to overlap
+        vendor_name_col_vendor = vendor_name_col
+        if vendor_name_col in df.columns and vendor_name_col in vendor_df.columns:
+            vendor_name_col_vendor += '_vendor'
+
+        email_col_vendor = vendor_email_col
+        if vendor_email_col in df.columns and vendor_email_col in vendor_df.columns:
+            email_col_vendor += '_vendor'
+
+        contact_col_vendor = contact_col
+        if contact_col in df.columns and contact_col in vendor_df.columns:
+            contact_col_vendor += '_vendor'
 
         # Create a display DataFrame with updated column names
         display_df = merged_df[
@@ -162,6 +172,12 @@ def main():
                 contact_col_vendor      # Contact from vendor data
             ]
         ].copy()
+
+        # Check for duplicate columns in display_df
+        if display_df.columns.duplicated().any():
+            st.error("Duplicate column names detected in 'display_df'.")
+            st.write("Duplicate columns:", display_df.columns[display_df.columns.duplicated()].tolist())
+            st.stop()
 
         # Configure AgGrid for multi-selection
         gb = GridOptionsBuilder.from_dataframe(display_df)
