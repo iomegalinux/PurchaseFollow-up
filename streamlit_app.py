@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 import pandas as pd
 from pandas import ExcelFile
 import smtplib
@@ -9,10 +10,14 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 def send_emails(
     grouped_data,
-    smtp_server,
-    smtp_port,
-    smtp_username,
-    smtp_password,
+    email_method,
+    smtp_server=None,
+    smtp_port=None,
+    smtp_username=None,
+    smtp_password=None,
+    api_base_url=None,
+    api_token=None,
+    mailbox_number=None,
     company_name,
     email_subject,
     email_body,
@@ -28,7 +33,7 @@ def send_emails(
     for vendor_email, group in grouped_data:
         # Prepare email content
         message = MIMEMultipart()
-        message['From'] = smtp_username
+        message['From'] = smtp_username if email_method == "SMTP" else company_name
         message['To'] = vendor_email
         message['Subject'] = email_subject
         
@@ -39,18 +44,43 @@ def send_emails(
         rows_text = group[[product_col, quantity_col, due_date_col]].to_string(index=False)
         full_email_body = f"{personalized_body}\n\n{rows_text}"
         
-        message.attach(MIMEText(full_email_body, 'plain'))
-        
-        # Send the email
-        try:
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.send_message(message)
-            server.quit()
-            st.success(f"Emails sent to vendor {vendor_email}")
-        except Exception as e:
-            st.error(f"Failed to send email to vendor {vendor_email}: {e}")
+        if email_method == "SMTP":
+            # Attach the body to the email
+            message.attach(MIMEText(full_email_body, 'plain'))
+            # Send the email via SMTP
+            try:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.send_message(message)
+                server.quit()
+                st.success(f"Email sent to vendor {vendor_email} via SMTP")
+            except Exception as e:
+                st.error(f"Failed to send email to vendor {vendor_email} via SMTP: {e}")
+        elif email_method == "API":
+            # Send the email via API
+            try:
+                # Prepare API payload
+                payload = {
+                    "mailbox_number": mailbox_number,
+                    "email_to": vendor_email,
+                    "subject": message['Subject'],
+                    "body": full_email_body,
+                }
+
+                headers = {
+                    "Authorization": f"Bearer {api_token}",
+                    "Content-Type": "application/json"
+                }
+
+                response = requests.post(f"{api_base_url}/send_email", json=payload, headers=headers)
+
+                if response.status_code == 200:
+                    st.success(f"Email sent to vendor {vendor_email} via API")
+                else:
+                    st.error(f"Failed to send email to vendor {vendor_email} via API. Status Code: {response.status_code}. Response: {response.text}")
+            except Exception as e:
+                st.error(f"Failed to send email to vendor {vendor_email} via API: {e}")
 
 def main():
     st.set_page_config(layout="wide")
@@ -224,15 +254,53 @@ def main():
             if st.button('Follow-up'):
                 if not selected_df.empty:
                     grouped = selected_df.groupby(email_col_merged)
-                    # Validate email settings
-                    if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
-                        st.error("Please provide all email settings in the Email Settings tab.")
-                    else:
-                        send_emails(
-                            grouped, smtp_server, smtp_port, smtp_username, smtp_password,
-                            company_name, email_subject, email_body, email_col_merged,
-                            product_col, quantity_col, due_date_col, contact_col_merged, vendor_name_col_merged
-                        )
+                    if email_method == "SMTP":
+                        # Validate SMTP email settings
+                        if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
+                            st.error("Please provide all SMTP email settings in the Email Settings tab.")
+                        else:
+                            send_emails(
+                                grouped_data=grouped,
+                                email_method=email_method,
+                                smtp_server=smtp_server,
+                                smtp_port=smtp_port,
+                                smtp_username=smtp_username,
+                                smtp_password=smtp_password,
+                                company_name=company_name,
+                                email_subject=email_subject,
+                                email_body=email_body,
+                                email_col=email_col_merged,
+                                contact_col_merged=contact_col_merged,
+                                vendor_name_col_merged=vendor_name_col_merged,
+                                product_col=product_col,
+                                quantity_col=quantity_col,
+                                due_date_col=due_date_col,
+                                contact_col=contact_col,
+                                vendor_name_col=vendor_name_col
+                            )
+                    elif email_method == "API":
+                        # Validate API email settings
+                        if not all([api_base_url, api_token, mailbox_number]):
+                            st.error("Please provide all API email settings in the Email Settings tab.")
+                        else:
+                            send_emails(
+                                grouped_data=grouped,
+                                email_method=email_method,
+                                api_base_url=api_base_url,
+                                api_token=api_token,
+                                mailbox_number=mailbox_number,
+                                company_name=company_name,
+                                email_subject=email_subject,
+                                email_body=email_body,
+                                email_col=email_col_merged,
+                                contact_col_merged=contact_col_merged,
+                                vendor_name_col_merged=vendor_name_col_merged,
+                                product_col=product_col,
+                                quantity_col=quantity_col,
+                                due_date_col=due_date_col,
+                                contact_col=contact_col,
+                                vendor_name_col=vendor_name_col
+                            )
                 else:
                     st.warning('Please select at least one row.')
         else:
@@ -241,16 +309,21 @@ def main():
     with tab2:
         st.header("Email Configuration")
 
-        with st.expander('SMTP Settings'):
-            smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+        with st.expander('Email Settings'):
+            email_method = st.radio("Select Email Method", options=["SMTP", "API"], index=0)
             
-            # Add this conditional check
-            if 'office365.com' in smtp_server:
-                st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the smtp password email settings.")
-            smtp_port = st.number_input("SMTP Port", value=587, step=1)
-            smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-            smtp_password = st.text_input("SMTP Password", type="password")
-            company_name = st.text_input("Your Company Name", value="Your Company")
+            if email_method == "SMTP":
+                smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+                if 'office365.com' in smtp_server:
+                    st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the SMTP password email settings.")
+                smtp_port = st.number_input("SMTP Port", value=587, step=1)
+                smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
+                smtp_password = st.text_input("SMTP Password", type="password")
+                company_name = st.text_input("Your Company Name", value="Your Company")
+            elif email_method == "API":
+                api_base_url = st.text_input("API Base URL", value="https://api.example.com")
+                api_token = st.text_input("API Token", type="password")
+                mailbox_number = st.text_input("Mailbox Number", value="123456")
 
         with st.expander('Email Content'):
             email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
