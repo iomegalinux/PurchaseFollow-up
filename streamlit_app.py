@@ -17,6 +17,8 @@ def send_emails(
     email_subject,
     email_body,
     email_col,
+    contact_col_merged,
+    vendor_name_col_merged,
     product_col,
     quantity_col,
     due_date_col,
