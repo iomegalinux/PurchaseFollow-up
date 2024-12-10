@@ -103,6 +103,10 @@ def main():
         company_name = None
         email_subject = None
         email_body = None
+        email_method = None
+        api_base_url = None
+        api_token = None
+        mailbox_number = None
 
         # Proceed only if both files are uploaded
         if uploaded_file is not None and vendor_file is not None:
