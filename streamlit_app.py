@@ -215,7 +215,16 @@ def main():
             email_col_merged = f"{vendor_email_col}_vendor"
             contact_col_merged = f"{contact_col}_vendor"
 
-            # Create a display DataFrame with all columns from the merged dataframe
+            # Convert 'due_date_col' in 'merged_df' to datetime
+            merged_df[due_date_col] = pd.to_datetime(merged_df[due_date_col], errors='coerce')
+
+            # Add the checkbox above the data table
+            show_late_only = st.checkbox('Show Late Only', value=False)
+
+            # Filter the DataFrame based on the checkbox state
+            if show_late_only:
+                today = pd.Timestamp.now().normalize()
+                merged_df = merged_df[merged_df[due_date_col] < today]
             display_df = merged_df.copy()
 
             # Check for duplicate columns in display_df
