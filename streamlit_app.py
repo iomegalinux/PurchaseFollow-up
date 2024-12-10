@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from pandas import ExcelFile
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -74,9 +75,39 @@ def main():
         # Proceed only if both files are uploaded
         if uploaded_file is not None and vendor_file is not None:
             try:
-                # Read the main data file
-                df = pd.read_excel(uploaded_file, header=0, index_col=None)
-                vendor_df = pd.read_excel(vendor_file, header=0, index_col=None)
+                # Get sheet names from the uploaded Excel files
+                main_excel_file = pd.ExcelFile(uploaded_file)
+                main_sheet_names = main_excel_file.sheet_names
+
+                vendor_excel_file = pd.ExcelFile(vendor_file)
+                vendor_sheet_names = vendor_excel_file.sheet_names
+
+                # Allow the user to select the sheet from each file
+                with st.expander('Select Excel Sheets'):
+                    main_sheet = st.selectbox(
+                        "Select sheet from the main data file",
+                        options=main_sheet_names,
+                        key='main_sheet_selectbox'
+                    )
+                    vendor_sheet = st.selectbox(
+                        "Select sheet from the vendor information file",
+                        options=vendor_sheet_names,
+                        key='vendor_sheet_selectbox'
+                    )
+
+                # Read the selected sheets into DataFrames
+                df = pd.read_excel(
+                    uploaded_file,
+                    sheet_name=main_sheet,
+                    header=0,
+                    index_col=None
+                )
+                vendor_df = pd.read_excel(
+                    vendor_file,
+                    sheet_name=vendor_sheet,
+                    header=0,
+                    index_col=None
+                )
             except Exception as e:
                 st.error(f"Error processing the uploaded files: {e}")
                 return
