@@ -84,6 +84,16 @@ def send_emails(
 
 def main():
     st.set_page_config(layout="wide")
+
+    # Initialize session state variables if they don't exist
+    session_vars = [
+        'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'company_name',
+        'email_subject', 'email_body', 'email_method',
+        'api_base_url', 'api_token', 'mailbox_number'
+    ]
+    for var in session_vars:
+        if var not in st.session_state:
+            st.session_state[var] = None
     st.title('Back Order Follow-up')
     
     tab1, tab2 = st.tabs(["Data Input", "Email Settings"])
@@ -96,17 +106,17 @@ def main():
             vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
         
         # Initialize email settings variables
-        smtp_server = None
-        smtp_port = None
-        smtp_username = None
-        smtp_password = None
-        company_name = None
-        email_subject = None
-        email_body = None
-        email_method = None
-        api_base_url = None
-        api_token = None
-        mailbox_number = None
+        smtp_server = st.session_state.smtp_server
+        smtp_port = st.session_state.smtp_port
+        smtp_username = st.session_state.smtp_username
+        smtp_password = st.session_state.smtp_password
+        company_name = st.session_state.company_name
+        email_subject = st.session_state.email_subject
+        email_body = st.session_state.email_body
+        email_method = st.session_state.email_method
+        api_base_url = st.session_state.api_base_url
+        api_token = st.session_state.api_token
+        mailbox_number = st.session_state.mailbox_number
 
         # Proceed only if both files are uploaded
         if uploaded_file is not None and vendor_file is not None:
@@ -265,13 +275,30 @@ def main():
             selected_df = pd.DataFrame(selected)
 
             if st.button('Follow-up'):
+                # Debugging: Output the selected DataFrame
+                st.write("Selected DataFrame:", selected_df)
+
                 if not selected_df.empty:
+                    # Debugging: Check the columns in selected_df
+                    st.write("Columns in selected_df:", selected_df.columns.tolist())
+
                     grouped = selected_df.groupby(email_col_merged)
+
+                    # Debugging: Output the email method being used
+                    st.write("Email Method Selected:", email_method)
+
                     if email_method == "SMTP":
                         # Validate SMTP email settings
+                        st.write("SMTP Email Settings:")
+                        st.write("SMTP Server:", smtp_server)
+                        st.write("SMTP Port:", smtp_port)
+                        st.write("SMTP Username:", smtp_username)
+                        st.write("Company Name:", company_name)
+
                         if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
                             st.error("Please provide all SMTP email settings in the Email Settings tab.")
                         else:
+                            st.write("SMTP settings are complete. Proceeding to send emails...")
                             send_emails(
                                 grouped_data=grouped,
                                 email_method=email_method,
@@ -296,9 +323,15 @@ def main():
                             )
                     elif email_method == "API":
                         # Validate API email settings
+                        st.write("API Email Settings:")
+                        st.write("API Base URL:", api_base_url)
+                        st.write("API Token:", api_token)
+                        st.write("Mailbox Number:", mailbox_number)
+
                         if not all([api_base_url, api_token, mailbox_number]):
                             st.error("Please provide all API email settings in the Email Settings tab.")
                         else:
+                            st.write("API settings are complete. Proceeding to send emails...")
                             send_emails(
                                 grouped_data=grouped,
                                 email_method=email_method,
@@ -321,8 +354,12 @@ def main():
                                 contact_col=contact_col,
                                 vendor_name_col=vendor_name_col
                             )
+                    else:
+                        st.error("Invalid email method selected.")
                 else:
                     st.warning('Please select at least one row.')
+                    # Debugging: Indicate that no rows are selected
+                    st.write("No rows selected in the data table.")
         else:
             st.warning("Please upload both the main data file and the vendor information file.")
 
@@ -330,24 +367,24 @@ def main():
         st.header("Email Configuration")
 
         with st.expander('Email Settings'):
-            email_method = st.radio("Select Email Method", options=["SMTP", "API"], index=0)
-            
-            if email_method == "SMTP":
-                smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
-                if 'office365.com' in smtp_server:
+            st.session_state.email_method = st.radio("Select Email Method", options=["SMTP", "API"], index=0)
+
+            if st.session_state.email_method == "SMTP":
+                st.session_state.smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
+                if 'office365.com' in st.session_state.smtp_server:
                     st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the SMTP password email settings.")
-                smtp_port = st.number_input("SMTP Port", value=587, step=1)
-                smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-                smtp_password = st.text_input("SMTP Password", type="password")
-                company_name = st.text_input("Your Company Name", value="Your Company")
-            elif email_method == "API":
-                api_base_url = st.text_input("API Base URL", value="https://api.example.com")
-                api_token = st.text_input("API Token", type="password")
-                mailbox_number = st.text_input("Mailbox Number", value="123456")
+                st.session_state.smtp_port = st.number_input("SMTP Port", value=587, step=1)
+                st.session_state.smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
+                st.session_state.smtp_password = st.text_input("SMTP Password", type="password")
+                st.session_state.company_name = st.text_input("Your Company Name", value="Your Company")
+            elif st.session_state.email_method == "API":
+                st.session_state.api_base_url = st.text_input("API Base URL", value="https://api.example.com")
+                st.session_state.api_token = st.text_input("API Token", type="password")
+                st.session_state.mailbox_number = st.text_input("Mailbox Number", value="123456")
 
         with st.expander('Email Content'):
-            email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
-            email_body = st.text_area(
+            st.session_state.email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
+            st.session_state.email_body = st.text_area(
                 "Email Body",
                 value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n"
             )
