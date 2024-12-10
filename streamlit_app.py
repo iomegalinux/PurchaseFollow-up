@@ -163,6 +163,7 @@ def main():
             vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
 
             # Merge the DataFrames on the vendor number
+            merged_df = pd.merge(
                 df,
                 vendor_df,
                 left_on=vendor_col,
