@@ -23,17 +23,17 @@ def send_emails(
     contact_col,
     vendor_name_col
 ):
-    for vendor, group in grouped_data:
+    for vendor_email, group in grouped_data:
         # Prepare email content
         message = MIMEMultipart()
         message['From'] = smtp_username
-        message['To'] = ', '.join(group[email_col].unique())
+        message['To'] = vendor_email
         message['Subject'] = email_subject
         
         # Personalize the email body
-        recipient_names = ', '.join(group[contact_col].unique())
+        recipient_names = ', '.join(group[contact_col_merged].unique())
         personalized_body = email_body.replace("[Recipient]", recipient_names)
-        personalized_body = personalized_body.replace("[VendorName]", str(group[vendor_name_col].iloc[0]))
+        personalized_body = personalized_body.replace("[VendorName]", str(group[vendor_name_col_merged].iloc[0]))
         rows_text = group[[product_col, quantity_col, due_date_col]].to_string(index=False)
         full_email_body = f"{personalized_body}\n\n{rows_text}"
         
@@ -46,9 +46,9 @@ def send_emails(
             server.login(smtp_username, smtp_password)
             server.send_message(message)
             server.quit()
-            st.success(f"Emails sent to vendor {vendor}")
+            st.success(f"Emails sent to vendor {vendor_email}")
         except Exception as e:
-            st.error(f"Failed to send email to vendor {vendor}: {e}")
+            st.error(f"Failed to send email to vendor {vendor_email}: {e}")
 
 def main():
     st.set_page_config(layout="wide")
@@ -157,34 +157,26 @@ def main():
             df[vendor_col] = df[vendor_col].astype(str)
             vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
 
-            # Merge the DataFrames on the vendor number with suffixes for overlapping columns
-            merged_df = pd.merge(
+            # Merge the DataFrames on the vendor number
+            # Convert vendor number columns to string to ensure consistent data types
+            df[vendor_col] = df[vendor_col].astype(str)
+            vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
+
+            # Merge the DataFrames on the vendor number
                 df,
                 vendor_df,
                 left_on=vendor_col,
                 right_on=vendor_no_col_vendor,
-                how='left',
-                suffixes=('_main', '_vendor')
+                how='left'
             )
 
-            # Update column variable names based on whether they have suffixes
-            vendor_col_main = vendor_col  # No suffix needed if not overlapping
-            product_col_main = product_col
-            quantity_col_main = quantity_col
-            due_date_col_main = due_date_col
+            # Remove duplicates from the merged DataFrame
+            merged_df = merged_df.drop_duplicates()
 
-            # Check if any columns have suffixes due to overlap
-            vendor_name_col_vendor = vendor_name_col
-            if vendor_name_col in df.columns and vendor_name_col in vendor_df.columns:
-                vendor_name_col_vendor += '_vendor'
-
-            email_col_vendor = vendor_email_col
-            if vendor_email_col in df.columns and vendor_email_col in vendor_df.columns:
-                email_col_vendor += '_vendor'
-
-            contact_col_vendor = contact_col
-            if contact_col in df.columns and contact_col in vendor_df.columns:
-                contact_col_vendor += '_vendor'
+            # Use the original column names since we removed suffixes
+            vendor_name_col_merged = vendor_name_col
+            email_col_merged = vendor_email_col
+            contact_col_merged = contact_col
 
             # Create a display DataFrame with all columns from the merged dataframe
             display_df = merged_df.copy()
@@ -228,15 +220,15 @@ def main():
 
             if st.button('Follow-up'):
                 if not selected_df.empty:
-                    grouped = selected_df.groupby(vendor_col_main)
+                    grouped = selected_df.groupby(email_col_merged)
                     # Validate email settings
                     if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
                         st.error("Please provide all email settings in the Email Settings tab.")
                     else:
                         send_emails(
                             grouped, smtp_server, smtp_port, smtp_username, smtp_password,
-                            company_name, email_subject, email_body, email_col_vendor,
-                            product_col_main, quantity_col_main, due_date_col_main, contact_col_vendor, vendor_name_col_vendor
+                            company_name, email_subject, email_body, email_col_merged,
+                            product_col, quantity_col, due_date_col, contact_col_merged, vendor_name_col_merged
                         )
                 else:
                     st.warning('Please select at least one row.')
