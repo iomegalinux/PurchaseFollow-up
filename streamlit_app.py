@@ -206,10 +206,10 @@ def main():
             # Remove duplicates from the merged DataFrame
             merged_df = merged_df.drop_duplicates()
 
-            # Use the original column names since we removed suffixes
-            vendor_name_col_merged = vendor_name_col
-            email_col_merged = vendor_email_col
-            contact_col_merged = contact_col
+            # Use the merged column names with suffixes
+            vendor_name_col_merged = f"{vendor_name_col}_vendor"
+            email_col_merged = f"{vendor_email_col}_vendor"
+            contact_col_merged = f"{contact_col}_vendor"
 
             # Create a display DataFrame with all columns from the merged dataframe
             display_df = merged_df.copy()
