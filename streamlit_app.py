@@ -1,393 +1,60 @@
 import streamlit as st
-import requests
 import pandas as pd
-from pandas import ExcelFile
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from io import StringIO
 from st_aggrid import AgGrid, GridOptionsBuilder
-
-def send_emails(
-    grouped_data,
-    email_method,
-    company_name,
-    smtp_server=None,
-    smtp_port=None,
-    smtp_username=None,
-    smtp_password=None,
-    api_base_url=None,
-    api_token=None,
-    mailbox_number=None,
-    email_subject=None,
-    email_body=None,
-    email_col=None,
-    contact_col_merged=None,
-    vendor_name_col_merged=None,
-    product_col=None,
-    quantity_col=None,
-    due_date_col=None,
-    contact_col=None,
-    vendor_name_col=None
-):
-    for vendor_email, group in grouped_data:
-        # Prepare email content
-        message = MIMEMultipart()
-        message['From'] = smtp_username if email_method == "SMTP" else company_name
-        message['To'] = vendor_email
-        message['Subject'] = email_subject
-        
-        # Personalize the email body
-        recipient_names = ', '.join(group[contact_col_merged].unique())
-        personalized_body = email_body.replace("[Recipient]", recipient_names)
-        personalized_body = personalized_body.replace("[VendorName]", str(group[vendor_name_col_merged].iloc[0]))
-        rows_text = group[[product_col, quantity_col, due_date_col]].to_string(index=False)
-        full_email_body = f"{personalized_body}\n\n{rows_text}"
-        
-        if email_method == "SMTP":
-            # Attach the body to the email
-            message.attach(MIMEText(full_email_body, 'plain'))
-            # Send the email via SMTP
-            try:
-                server = smtplib.SMTP(smtp_server, smtp_port)
-                server.starttls()
-                server.login(smtp_username, smtp_password)
-                server.send_message(message)
-                server.quit()
-                st.success(f"Email sent to vendor {vendor_email} via SMTP")
-            except Exception as e:
-                st.error(f"Failed to send email to vendor {vendor_email} via SMTP: {e}")
-        elif email_method == "API":
-            # Send the email via API
-            try:
-                # Prepare API payload
-                payload = {
-                    "mailbox_number": mailbox_number,
-                    "email_to": vendor_email,
-                    "subject": message['Subject'],
-                    "body": full_email_body,
-                }
-
-                headers = {
-                    "Authorization": f"Bearer {api_token}",
-                    "Content-Type": "application/json"
-                }
-
-                response = requests.post(f"{api_base_url}/send_email", json=payload, headers=headers)
-
-                if response.status_code == 200:
-                    st.success(f"Email sent to vendor {vendor_email} via API")
-                else:
-                    st.error(f"Failed to send email to vendor {vendor_email} via API. Status Code: {response.status_code}. Response: {response.text}")
-            except Exception as e:
-                st.error(f"Failed to send email to vendor {vendor_email} via API: {e}")
+from data_processing import (
+    load_excel_file, map_columns,
+    merge_dataframes, filter_late_orders
+)
+from email_sender import send_emails
+from ui_elements import (
+    upload_files, select_excel_sheets,
+    column_mapping_section, email_settings_section,
+    email_content_section
+)
 
 def main():
     st.set_page_config(layout="wide")
-
-    # Initialize session state variables if they don't exist
-    session_vars = [
-        'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'company_name',
-        'email_subject', 'email_body', 'email_method',
-        'api_base_url', 'api_token', 'mailbox_number'
-    ]
-    for var in session_vars:
-        if var not in st.session_state:
-            st.session_state[var] = None
     st.title('Back Order Follow-up')
     
     tab1, tab2 = st.tabs(["Data Input", "Email Settings"])
     
     with tab1:
         st.header("Data Input")
-        
         with st.expander('Upload Data Files'):
-            uploaded_file = st.file_uploader('Upload Excel File', type=['xlsx'])
-            vendor_file = st.file_uploader('Upload Vendor Information Excel File', type=['xlsx'], key='vendor_file')
+            uploaded_file, vendor_file = upload_files()
         
-        # Initialize email settings variables
-        smtp_server = st.session_state.smtp_server
-        smtp_port = st.session_state.smtp_port
-        smtp_username = st.session_state.smtp_username
-        smtp_password = st.session_state.smtp_password
-        company_name = st.session_state.company_name
-        email_subject = st.session_state.email_subject
-        email_body = st.session_state.email_body
-        email_method = st.session_state.email_method
-        api_base_url = st.session_state.api_base_url
-        api_token = st.session_state.api_token
-        mailbox_number = st.session_state.mailbox_number
+        if uploaded_file and vendor_file:
+            main_sheet, vendor_sheet = select_excel_sheets(uploaded_file, vendor_file)
+            df = load_excel_file(uploaded_file, main_sheet)
+            vendor_df = load_excel_file(vendor_file, vendor_sheet)
 
-        # Proceed only if both files are uploaded
-        if uploaded_file is not None and vendor_file is not None:
-            try:
-                # Get sheet names from the uploaded Excel files
-                main_excel_file = pd.ExcelFile(uploaded_file)
-                main_sheet_names = main_excel_file.sheet_names
+            if df is not None and vendor_df is not None:
+                column_mappings = column_mapping_section(df.columns.tolist(), vendor_df.columns.tolist())
+                if column_mappings:
+                    df = map_columns(df, column_mappings['main'])
+                    vendor_df = map_columns(vendor_df, column_mappings['vendor'])
+                    merged_df = merge_dataframes(df, vendor_df, column_mappings['merge_key'])
 
-                vendor_excel_file = pd.ExcelFile(vendor_file)
-                vendor_sheet_names = vendor_excel_file.sheet_names
+                    show_late_only = st.checkbox('Show Late Only', value=False)
+                    if show_late_only:
+                        merged_df = filter_late_orders(merged_df, column_mappings['due_date_col'])
 
-                # Allow the user to select the sheet from each file
-                with st.expander('Select Excel Sheets'):
-                    main_sheet = st.selectbox(
-                        "Select sheet from the main data file",
-                        options=main_sheet_names,
-                        key='main_sheet_selectbox'
-                    )
-                    vendor_sheet = st.selectbox(
-                        "Select sheet from the vendor information file",
-                        options=vendor_sheet_names,
-                        key='vendor_sheet_selectbox'
-                    )
+                    # Display data and selections (implement display_data function)
+                    selected_df = display_data(merged_df)
 
-                # Read the selected sheets into DataFrames
-                df = pd.read_excel(
-                    uploaded_file,
-                    sheet_name=main_sheet,
-                    header=0,
-                    index_col=None
-                )
-                vendor_df = pd.read_excel(
-                    vendor_file,
-                    sheet_name=vendor_sheet,
-                    header=0,
-                    index_col=None
-                )
-            except Exception as e:
-                st.error(f"Error processing the uploaded files: {e}")
-                return
-
-            with st.expander('BackOrder information Map Columns'):
-                columns = df.columns.tolist()
-                vendor_col = st.selectbox('Select the Vendor Number Column', options=columns, index=columns.index('vendor_no') if 'vendor_no' in columns else 0)
-                product_col = st.selectbox('Select the Product Column', options=columns, index=columns.index('product') if 'product' in columns else 0)
-                quantity_col = st.selectbox('Select the Quantity Column', options=columns, index=columns.index('quantity') if 'quantity' in columns else 0)
-                due_date_col = st.selectbox('Select the Due Date Column', options=columns, index=columns.index('due_date') if 'due_date' in columns else 0)
-
-            if not all([vendor_col, product_col, quantity_col, due_date_col]):
-                st.error("Please select all required columns in the 'Map Columns' section.")
-                return
-
-            with st.expander('Map Vendor Information Columns'):
-                vendor_columns = vendor_df.columns.tolist()
-                vendor_no_col_vendor = st.selectbox(
-                    'Select the Vendor Number Column in Vendor Information File',
-                    options=vendor_columns,
-                    index=vendor_columns.index('vendor_no') if 'vendor_no' in vendor_columns else 0,
-                    key='vendor_no_col_vendor'
-                )
-                vendor_name_col = st.selectbox(
-                    'Select the Vendor Name Column',
-                    options=vendor_columns,
-                    index=vendor_columns.index('vendor_name') if 'vendor_name' in vendor_columns else 0
-                )
-                vendor_email_col = st.selectbox(
-                    'Select the Vendor Email Column',
-                    options=vendor_columns,
-                    index=vendor_columns.index('email') if 'email' in vendor_columns else 0,
-                    key='vendor_email_col'
-                )
-                contact_col = st.selectbox(
-                    'Select the Contact Column',
-                    options=vendor_columns,
-                    index=vendor_columns.index('contact') if 'contact' in vendor_columns else 0
-                )
-
-            if not all([vendor_no_col_vendor, vendor_name_col, vendor_email_col, contact_col]):
-                st.error("Please select all required columns in the 'Map Vendor Information Columns' section.")
-                return
-
-            # Convert key columns to string to ensure consistent data types
-            df[vendor_col] = df[vendor_col].astype(str)
-            vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
-
-            # Merge the DataFrames on the vendor number
-            # Convert vendor number columns to string to ensure consistent data types
-            df[vendor_col] = df[vendor_col].astype(str)
-            vendor_df[vendor_no_col_vendor] = vendor_df[vendor_no_col_vendor].astype(str)
-
-            # Merge the DataFrames on the vendor number with suffixes
-            merged_df = pd.merge(
-                df,
-                vendor_df,
-                left_on=vendor_col,
-                right_on=vendor_no_col_vendor,
-                how='left',
-                suffixes=('', '_vendor')
-            )
-
-            # Remove duplicates from the merged DataFrame
-            merged_df = merged_df.drop_duplicates()
-
-            # Use the merged column names with suffixes
-            vendor_name_col_merged = f"{vendor_name_col}_vendor"
-            email_col_merged = f"{vendor_email_col}_vendor"
-            contact_col_merged = f"{contact_col}_vendor"
-
-            # Convert 'due_date_col' in 'merged_df' to datetime
-            merged_df[due_date_col] = pd.to_datetime(merged_df[due_date_col], errors='coerce')
-
-            # Add the checkbox above the data table
-            show_late_only = st.checkbox('Show Late Only', value=False)
-
-            # Filter the DataFrame based on the checkbox state
-            if show_late_only:
-                today = pd.Timestamp.now().normalize()
-                merged_df = merged_df[merged_df[due_date_col] < today]
-            display_df = merged_df.copy()
-
-            # Check for duplicate columns in display_df
-            duplicated_columns = display_df.columns[display_df.columns.duplicated()].tolist()
-            if duplicated_columns:
-                # Identify the sources of the duplicate columns
-                duplicate_details = []
-                for col in duplicated_columns:
-                    sources = []
-                    if col in df.columns:
-                        sources.append("Main Data")
-                    if col in vendor_df.columns:
-                        sources.append("Vendor Information")
-                    duplicate_details.append(f"- '{col}' selected from: {', '.join(sources)}")
-                
-                st.error("You have selected duplicate columns, resulting in duplicate names in the display.")
-                st.write("Duplicate columns and their sources:")
-                for detail in duplicate_details:
-                    st.write(detail)
-                st.stop()
-
-            # Configure AgGrid for multi-selection
-            gb = GridOptionsBuilder.from_dataframe(display_df)
-            gb.configure_selection('multiple', use_checkbox=True)
-            grid_options = gb.build()
-
-            # Display the data in AgGrid
-            grid_response = AgGrid(
-                display_df,
-                gridOptions=grid_options,
-                height=500,  # Set the desired height in pixels
-                enable_enterprise_modules=False,
-                allow_unsafe_jscode=True,
-                update_mode='MODEL_CHANGED'
-            )
-
-            selected = grid_response['selected_rows']
-            selected_df = pd.DataFrame(selected)
-
-            if st.button('Follow-up'):
-                # Debugging: Output the selected DataFrame
-                st.write("Selected DataFrame:", selected_df)
-
-                if not selected_df.empty:
-                    # Debugging: Check the columns in selected_df
-                    st.write("Columns in selected_df:", selected_df.columns.tolist())
-
-                    grouped = selected_df.groupby(email_col_merged)
-
-                    # Debugging: Output the email method being used
-                    st.write("Email Method Selected:", email_method)
-
-                    if email_method == "SMTP":
-                        # Validate SMTP email settings
-                        st.write("SMTP Email Settings:")
-                        st.write("SMTP Server:", smtp_server)
-                        st.write("SMTP Port:", smtp_port)
-                        st.write("SMTP Username:", smtp_username)
-                        st.write("Company Name:", company_name)
-
-                        if not all([smtp_server, smtp_port, smtp_username, smtp_password, company_name]):
-                            st.error("Please provide all SMTP email settings in the Email Settings tab.")
-                        else:
-                            st.write("SMTP settings are complete. Proceeding to send emails...")
-                            send_emails(
-                                grouped_data=grouped,
-                                email_method=email_method,
-                                company_name=company_name,
-                                smtp_server=smtp_server,
-                                smtp_port=smtp_port,
-                                smtp_username=smtp_username,
-                                smtp_password=smtp_password,
-                                api_base_url=None,
-                                api_token=None,
-                                mailbox_number=None,
-                                email_subject=email_subject,
-                                email_body=email_body,
-                                email_col=email_col_merged,
-                                contact_col_merged=contact_col_merged,
-                                vendor_name_col_merged=vendor_name_col_merged,
-                                product_col=product_col,
-                                quantity_col=quantity_col,
-                                due_date_col=due_date_col,
-                                contact_col=contact_col,
-                                vendor_name_col=vendor_name_col
-                            )
-                    elif email_method == "API":
-                        # Validate API email settings
-                        st.write("API Email Settings:")
-                        st.write("API Base URL:", api_base_url)
-                        st.write("API Token:", api_token)
-                        st.write("Mailbox Number:", mailbox_number)
-
-                        if not all([api_base_url, api_token, mailbox_number]):
-                            st.error("Please provide all API email settings in the Email Settings tab.")
-                        else:
-                            st.write("API settings are complete. Proceeding to send emails...")
-                            send_emails(
-                                grouped_data=grouped,
-                                email_method=email_method,
-                                company_name=None,
-                                smtp_server=None,
-                                smtp_port=None,
-                                smtp_username=None,
-                                smtp_password=None,
-                                api_base_url=api_base_url,
-                                api_token=api_token,
-                                mailbox_number=mailbox_number,
-                                email_subject=email_subject,
-                                email_body=email_body,
-                                email_col=email_col_merged,
-                                contact_col_merged=contact_col_merged,
-                                vendor_name_col_merged=vendor_name_col_merged,
-                                product_col=product_col,
-                                quantity_col=quantity_col,
-                                due_date_col=due_date_col,
-                                contact_col=contact_col,
-                                vendor_name_col=vendor_name_col
-                            )
-                    else:
-                        st.error("Invalid email method selected.")
-                else:
-                    st.warning('Please select at least one row.')
-                    # Debugging: Indicate that no rows are selected
-                    st.write("No rows selected in the data table.")
+                    if selected_df is not None and st.button('Follow-up'):
+                        email_settings = st.session_state.get('email_settings', {})
+                        email_content = st.session_state.get('email_content', {})
+                        columns_info = column_mappings
+                        grouped = selected_df.groupby(column_mappings['email_col_merged'])
+                        send_emails(grouped, email_settings['method'], email_settings, email_content, columns_info)
         else:
             st.warning("Please upload both the main data file and the vendor information file.")
-
+    
     with tab2:
         st.header("Email Configuration")
-
-        with st.expander('Email Settings'):
-            st.session_state.email_method = st.radio("Select Email Method", options=["SMTP", "API"], index=0)
-
-            if st.session_state.email_method == "SMTP":
-                st.session_state.smtp_server = st.text_input("SMTP Server", value="smtp.example.com")
-                if 'office365.com' in st.session_state.smtp_server:
-                    st.warning("If you are using two-factor authentication with Office 365, please provide an application password in the SMTP password email settings.")
-                st.session_state.smtp_port = st.number_input("SMTP Port", value=587, step=1)
-                st.session_state.smtp_username = st.text_input("SMTP Username", value="your_email@example.com")
-                st.session_state.smtp_password = st.text_input("SMTP Password", type="password")
-                st.session_state.company_name = st.text_input("Your Company Name", value="Your Company")
-            elif st.session_state.email_method == "API":
-                st.session_state.api_base_url = st.text_input("API Base URL", value="https://api.example.com")
-                st.session_state.api_token = st.text_input("API Token", type="password")
-                st.session_state.mailbox_number = st.text_input("Mailbox Number", value="123456")
-
-        with st.expander('Email Content'):
-            st.session_state.email_subject = st.text_input("Email Subject", value="Back Order Follow-up")
-            st.session_state.email_body = st.text_area(
-                "Email Body",
-                value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n"
-            )
+        email_settings_section()
+        email_content_section()
 
 if __name__ == '__main__':
     main()
