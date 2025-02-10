@@ -14,6 +14,8 @@ def map_columns(df, mappings):
     return df
 
 def merge_dataframes(df1, df2, merge_key):
+    df1[merge_key] = df1[merge_key].astype(str)
+    df2[merge_key] = df2[merge_key].astype(str)
     merged_df = pd.merge(df1, df2, on=merge_key, how='left', suffixes=('', '_vendor'))
     return merged_df
 
