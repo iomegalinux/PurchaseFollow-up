@@ -57,9 +57,10 @@ def email_settings_section():
          password = st.text_input("SMTP Password", type="password")
          settings = {"method": method, "server": server, "port": port, "username": username, "password": password}
     else:
-         api_key = st.text_input("API Key")
-         api_url = st.text_input("API URL")
-         settings = {"method": method, "api_key": api_key, "api_url": api_url}
+         base_url = st.text_input("API Base URL", value="https://api.example.com")
+         mailbox = st.text_input("Mailbox Number", value="123456")
+         token = st.text_input("API Token", type="password")
+         settings = {"method": method, "api_base_url": base_url, "mailbox_number": mailbox, "api_token": token}
     st.session_state['email_settings'] = settings
 
 def email_content_section():
