@@ -18,14 +18,16 @@ def column_mapping_section(df_columns, vendor_columns):
     main_field = st.selectbox("Select main file key for mapping 'Supplier No'", df_columns)
     vendor_field = st.selectbox("Select vendor file key for mapping 'Supplier No'", vendor_columns)
     email_col_merged = st.selectbox("Select email column from merged data", df_columns)
-    if main_field and vendor_field and email_col_merged:
+    delivery_date_col = st.selectbox("Select delivery date column", df_columns)
+    if main_field and vendor_field and email_col_merged and delivery_date_col:
          mapping_main = {main_field: "Supplier No"}
          mapping_vendor = {vendor_field: "Supplier No"}
          return {
              "main": mapping_main,
              "vendor": mapping_vendor,
              "merge_key": "Supplier No",
-             "email_col_merged": email_col_merged
+             "email_col_merged": email_col_merged,
+             "due_date_col": delivery_date_col
          }
     return None
 
