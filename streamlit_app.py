@@ -66,7 +66,7 @@ def main():
                         if selected_df is not None and st.button('Follow-up'):
                             email_content = st.session_state.get('email_content', {})
                             columns_info = column_mappings
-                            grouped = selected_df.groupby(column_mappings['email_col_merged'])
+                            grouped = selected_df.groupby(column_mappings['merge_key'])
                             send_emails(grouped, email_settings['method'], email_settings, email_content, columns_info)
         else:
             st.warning("Please upload both the main data file and the vendor information file.")

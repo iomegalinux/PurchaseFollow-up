@@ -11,7 +11,8 @@ def send_emails(
     email_content,
     columns_info
 ):
-    for vendor_email, group in grouped_data:
+    for supplier_no, group in grouped_data:
+        vendor_email = group[columns_info['email_col_merged']].iloc[0]
         subject, body = prepare_email_content(group, email_content, columns_info)
         
         if email_method == "SMTP":
