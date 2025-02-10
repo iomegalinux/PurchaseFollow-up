@@ -66,4 +66,5 @@ def email_content_section():
     st.subheader("Email Content")
     subject = st.text_input("Email Subject", value="Back Order Follow-up")
     body = st.text_area("Email Body", value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n")
-    st.session_state['email_content'] = {"subject": subject, "body": body}
+    signature = st.text_input("Email Signature", value="Your default signature")
+    st.session_state['email_content'] = {"subject": subject, "body": body, "signature": signature}
