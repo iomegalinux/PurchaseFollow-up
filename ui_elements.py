@@ -37,8 +37,10 @@ def column_mapping_section(df_columns, vendor_columns):
         st.session_state["quantity_col"] = quantity_col
         future_delivery_option = st.radio("Select future delivery option", ["Next Week", "Next Month", "No Delivery Date"])
         st.session_state["future_delivery_option"] = future_delivery_option
-        if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col and product_col and quantity_col:
-             mapping_main = {main_field: "Supplier No"}
+        unconfirmed_po_col = st.selectbox("Select unconfirmed PO column (boolean)", df_columns)
+        st.session_state["unconfirmed_po_col"] = unconfirmed_po_col
+        if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col and product_col and quantity_col and unconfirmed_po_col:
+             mapping_main = {main_field: "Supplier No", unconfirmed_po_col: "Unconfirmed PO"}
              mapping_vendor = {vendor_field: "Supplier No", vendor_name_col: "Vendor Name"}
              return {
                  "main": mapping_main,
@@ -48,7 +50,8 @@ def column_mapping_section(df_columns, vendor_columns):
                  "email_col_merged": email_col_merged,
                  "due_date_col": delivery_date_col,
                  "product_col": product_col,
-                 "quantity_col": quantity_col
+                 "quantity_col": quantity_col,
+                 "unconfirmed_po": "Unconfirmed PO"
              }
     return None
 
