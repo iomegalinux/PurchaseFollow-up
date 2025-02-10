@@ -32,9 +32,22 @@ def column_mapping_section(df_columns, vendor_columns):
     return None
 
 def email_settings_section():
-    # Provide inputs for email settings (SMTP or API)
-    pass
+    st.subheader("Email Settings")
+    method = st.selectbox("Select email sending method", ['SMTP', 'API'])
+    if method == 'SMTP':
+         server = st.text_input("SMTP Server", value="smtp.example.com")
+         port = st.number_input("SMTP Port", value=587)
+         username = st.text_input("SMTP Username")
+         password = st.text_input("SMTP Password", type="password")
+         settings = {"method": method, "server": server, "port": port, "username": username, "password": password}
+    else:
+         api_key = st.text_input("API Key")
+         api_url = st.text_input("API URL")
+         settings = {"method": method, "api_key": api_key, "api_url": api_url}
+    st.session_state['email_settings'] = settings
 
 def email_content_section():
-    # Provide inputs for email subject and body
-    pass
+    st.subheader("Email Content")
+    subject = st.text_input("Email Subject", value="Back Order Follow-up")
+    body = st.text_area("Email Body", value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n")
+    st.session_state['email_content'] = {"subject": subject, "body": body}
