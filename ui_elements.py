@@ -78,3 +78,8 @@ def email_content_section():
     body = st.text_area("Email Body", value="Dear [Recipient],\n\nWe would like to follow up on the following back orders for [VendorName]:\n\n")
     signature = st.text_input("Email Signature", value="Your default signature")
     st.session_state['email_content'] = {"subject": subject, "body": body, "signature": signature}
+
+def filter_unconfirmed_section():
+    st.subheader("Table Filter")
+    filter_option = st.radio("Filter table by unconfirmed Purchase Order", ["Show All", "Unconfirmed Only"])
+    st.session_state["filter_unconfirmed"] = filter_option
