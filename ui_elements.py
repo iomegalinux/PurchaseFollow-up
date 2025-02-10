@@ -15,17 +15,16 @@ def select_excel_sheets(main_file, vendor_file):
 
 def column_mapping_section(df_columns, vendor_columns):
     st.subheader("Field Mapping")
-    main_field = st.selectbox("Select main file key for mapping 'OrderID'", df_columns)
-    vendor_field = st.selectbox("Select vendor file key for mapping 'OrderID'", vendor_columns)
-    merge_key = st.selectbox("Select merge key", df_columns)
+    main_field = st.selectbox("Select main file key for mapping 'Supplier No'", df_columns)
+    vendor_field = st.selectbox("Select vendor file key for mapping 'Supplier No'", vendor_columns)
     email_col_merged = st.selectbox("Select email column from merged data", df_columns)
-    if main_field and vendor_field and merge_key and email_col_merged:
-         mapping_main = {main_field: "OrderID"}
-         mapping_vendor = {vendor_field: "OrderID"}
+    if main_field and vendor_field and email_col_merged:
+         mapping_main = {main_field: "Supplier No"}
+         mapping_vendor = {vendor_field: "Supplier No"}
          return {
              "main": mapping_main,
              "vendor": mapping_vendor,
-             "merge_key": merge_key,
+             "merge_key": "Supplier No",
              "email_col_merged": email_col_merged
          }
     return None
