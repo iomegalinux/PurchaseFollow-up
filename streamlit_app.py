@@ -53,6 +53,9 @@ def main():
                     show_late_only = st.checkbox('Show Late Only', value=False)
                     if show_late_only:
                         merged_df = filter_late_orders(merged_df, column_mappings['due_date_col'])
+                    if merged_df is None:
+                        st.error("Merging data failed. Please verify merge key exists in both files.")
+                        return
 
                     # Display data and selections (implement display_data function)
                     selected_df = display_data(merged_df)
