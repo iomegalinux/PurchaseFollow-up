@@ -27,7 +27,11 @@ def column_mapping_section(df_columns, vendor_columns):
     st.session_state["email_col_merged"] = email_col_merged
     delivery_date_col = st.selectbox("Select delivery date column", df_columns)
     st.session_state["delivery_date_col"] = delivery_date_col
-    if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col:
+    product_col = st.selectbox("Select product column", df_columns)
+    st.session_state["product_col"] = product_col
+    quantity_col = st.selectbox("Select quantity column", df_columns)
+    st.session_state["quantity_col"] = quantity_col
+    if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col and product_col and quantity_col:
          mapping_main = {main_field: "Supplier No"}
          mapping_vendor = {vendor_field: "Supplier No", vendor_name_col: "Vendor Name"}
          return {
@@ -36,7 +40,9 @@ def column_mapping_section(df_columns, vendor_columns):
              "merge_key": "Supplier No",
              "vendor_name_col_merged": "Vendor Name",
              "email_col_merged": email_col_merged,
-             "due_date_col": delivery_date_col
+             "due_date_col": delivery_date_col,
+             "product_col": product_col,
+             "quantity_col": quantity_col
          }
     return None
 
