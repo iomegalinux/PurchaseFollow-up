@@ -19,8 +19,12 @@ def display_data(df):
 
     grid_response = AgGrid(df, gridOptions=grid_options, enable_enterprise_modules=True)
     selected_rows = grid_response.get('selected_rows')
-    if selected_rows is not None and len(selected_rows) > 0:
+    if selected_rows is None:
+         return df
+    if isinstance(selected_rows, list) and len(selected_rows) > 0:
          return pd.DataFrame(selected_rows)
+    elif isinstance(selected_rows, pd.DataFrame) and not selected_rows.empty:
+         return selected_rows
     return df
 
 def main():
