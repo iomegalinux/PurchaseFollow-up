@@ -29,7 +29,11 @@ def prepare_email_content(group, email_content, columns_info):
     # Preserve formatting from the input text by converting newlines to HTML <br> tags.
     personalized_body = personalized_body.replace("\n", "<br>")
     signature = email_content['signature'].replace("\n", "<br>")
-    rows_html = group[
+    # Format the due date column to display date only.
+    import pandas as pd
+    temp_df = group.copy()
+    temp_df[columns_info['due_date_col']] = pd.to_datetime(temp_df[columns_info['due_date_col']], errors='coerce').dt.strftime('%Y-%m-%d')
+    rows_html = temp_df[
         [columns_info['product_col'], columns_info['quantity_col'], columns_info['due_date_col']]
     ].to_html(index=False, border=1)
     # Add two extra HTML line breaks (<br><br>) before the HTML table and before the signature.
