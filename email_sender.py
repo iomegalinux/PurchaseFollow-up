@@ -22,7 +22,7 @@ def send_emails(
             st.error("Invalid email method selected.")
 
 def prepare_email_content(group, email_content, columns_info):
-    recipient_names = ', '.join(group[columns_info['contact_col_merged']].unique())
+    recipient_names = ', '.join(group[columns_info['email_col_merged']].unique())
     vendor_name = str(group[columns_info['vendor_name_col_merged']].iloc[0])
     personalized_body = email_content['body'].replace("[Recipient]", recipient_names)
     personalized_body = personalized_body.replace("[VendorName]", vendor_name)
