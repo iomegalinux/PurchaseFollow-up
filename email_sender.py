@@ -28,9 +28,9 @@ def prepare_email_content(group, email_content, columns_info):
     personalized_body = personalized_body.replace("[VendorName]", vendor_name)
     rows_html = group[
         [columns_info['product_col'], columns_info['quantity_col'], columns_info['due_date_col']]
-    ].to_html(index=False, border=0)
-    # Add line breaks before and after the table, and before the signature.
-    full_body = f"{personalized_body}\n\n{rows_html}\n\n{email_content['signature']}"
+    ].to_html(index=False, border=1)
+    # Add two extra line breaks before the HTML table and before the signature, preserving formatting.
+    full_body = f"{personalized_body}\n\n\n\n{rows_html}\n\n\n\n{email_content['signature']}"
     return email_content['subject'], full_body
 
 def send_email_smtp(vendor_email, subject, body, email_settings):
