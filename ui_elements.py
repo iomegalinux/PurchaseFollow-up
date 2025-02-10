@@ -16,34 +16,35 @@ def select_excel_sheets(main_file, vendor_file):
     return main_sheet, vendor_sheet
 
 def column_mapping_section(df_columns, vendor_columns):
-    st.subheader("Field Mapping")
-    main_field = st.selectbox("Select main file key for mapping 'Supplier No'", df_columns)
-    st.session_state["main_field"] = main_field
-    vendor_field = st.selectbox("Select vendor file key for mapping 'Supplier No'", vendor_columns)
-    st.session_state["vendor_field"] = vendor_field
-    vendor_name_col = st.selectbox("Select vendor name column", vendor_columns)
-    st.session_state["vendor_name_col"] = vendor_name_col
-    email_col_merged = st.selectbox("Select email column from merged data", df_columns)
-    st.session_state["email_col_merged"] = email_col_merged
-    delivery_date_col = st.selectbox("Select delivery date column", df_columns)
-    st.session_state["delivery_date_col"] = delivery_date_col
-    product_col = st.selectbox("Select product column", df_columns)
-    st.session_state["product_col"] = product_col
-    quantity_col = st.selectbox("Select quantity column", df_columns)
-    st.session_state["quantity_col"] = quantity_col
-    if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col and product_col and quantity_col:
-         mapping_main = {main_field: "Supplier No"}
-         mapping_vendor = {vendor_field: "Supplier No", vendor_name_col: "Vendor Name"}
-         return {
-             "main": mapping_main,
-             "vendor": mapping_vendor,
-             "merge_key": "Supplier No",
-             "vendor_name_col_merged": "Vendor Name",
-             "email_col_merged": email_col_merged,
-             "due_date_col": delivery_date_col,
-             "product_col": product_col,
-             "quantity_col": quantity_col
-         }
+    with st.expander("Field Mapping Options"):
+        st.subheader("Field Mapping")
+        main_field = st.selectbox("Select main file key for mapping 'Supplier No'", df_columns)
+        st.session_state["main_field"] = main_field
+        vendor_field = st.selectbox("Select vendor file key for mapping 'Supplier No'", vendor_columns)
+        st.session_state["vendor_field"] = vendor_field
+        vendor_name_col = st.selectbox("Select vendor name column", vendor_columns)
+        st.session_state["vendor_name_col"] = vendor_name_col
+        email_col_merged = st.selectbox("Select email column from merged data", df_columns)
+        st.session_state["email_col_merged"] = email_col_merged
+        delivery_date_col = st.selectbox("Select delivery date column", df_columns)
+        st.session_state["delivery_date_col"] = delivery_date_col
+        product_col = st.selectbox("Select product column", df_columns)
+        st.session_state["product_col"] = product_col
+        quantity_col = st.selectbox("Select quantity column", df_columns)
+        st.session_state["quantity_col"] = quantity_col
+        if main_field and vendor_field and vendor_name_col and email_col_merged and delivery_date_col and product_col and quantity_col:
+             mapping_main = {main_field: "Supplier No"}
+             mapping_vendor = {vendor_field: "Supplier No", vendor_name_col: "Vendor Name"}
+             return {
+                 "main": mapping_main,
+                 "vendor": mapping_vendor,
+                 "merge_key": "Supplier No",
+                 "vendor_name_col_merged": "Vendor Name",
+                 "email_col_merged": email_col_merged,
+                 "due_date_col": delivery_date_col,
+                 "product_col": product_col,
+                 "quantity_col": quantity_col
+             }
     return None
 
 def email_settings_section():

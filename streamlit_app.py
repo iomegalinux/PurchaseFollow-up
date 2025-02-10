@@ -57,15 +57,17 @@ def main():
                         st.error("Merging data failed. Please verify merge key exists in both files.")
                         return
 
-                    # Display data and selections (implement display_data function)
-                    selected_df = display_data(merged_df)
-
-                    if selected_df is not None and st.button('Follow-up'):
-                        email_settings = st.session_state.get('email_settings', {})
-                        email_content = st.session_state.get('email_content', {})
-                        columns_info = column_mappings
-                        grouped = selected_df.groupby(column_mappings['email_col_merged'])
-                        send_emails(grouped, email_settings['method'], email_settings, email_content, columns_info)
+                    email_settings = st.session_state.get('email_settings', {})
+                    if (email_settings.get('method') == 'SMTP' and (not email_settings.get('username') or not email_settings.get('password') or not email_settings.get('server'))) or \
+                       (email_settings.get('method') == 'API' and (not email_settings.get('api_base_url') or not email_settings.get('mailbox_number') or not email_settings.get('api_token'))):
+                        st.warning("Please complete email configuration in the Email Settings tab before proceeding.")
+                    else:
+                        selected_df = display_data(merged_df)
+                        if selected_df is not None and st.button('Follow-up'):
+                            email_content = st.session_state.get('email_content', {})
+                            columns_info = column_mappings
+                            grouped = selected_df.groupby(column_mappings['email_col_merged'])
+                            send_emails(grouped, email_settings['method'], email_settings, email_content, columns_info)
         else:
             st.warning("Please upload both the main data file and the vendor information file.")
     
