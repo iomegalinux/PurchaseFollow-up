@@ -14,6 +14,14 @@ def map_columns(df, mappings):
     return df
 
 def merge_dataframes(df1, df2, merge_key):
+    if merge_key not in df1.columns:
+        import streamlit as st
+        st.error(f"Merge key '{merge_key}' not found in main dataframe columns: {df1.columns.tolist()}")
+        return None
+    if merge_key not in df2.columns:
+        import streamlit as st
+        st.error(f"Merge key '{merge_key}' not found in vendor dataframe columns: {df2.columns.tolist()}")
+        return None
     df1[merge_key] = df1[merge_key].astype(str)
     df2[merge_key] = df2[merge_key].astype(str)
     merged_df = pd.merge(df1, df2, on=merge_key, how='left', suffixes=('', '_vendor'))
