@@ -26,11 +26,14 @@ def prepare_email_content(group, email_content, columns_info):
     vendor_name = str(group[columns_info['vendor_name_col_merged']].iloc[0])
     personalized_body = email_content['body'].replace("[Recipient]", recipient_names)
     personalized_body = personalized_body.replace("[VendorName]", vendor_name)
+    # Preserve formatting from the input text by converting newlines to HTML <br> tags.
+    personalized_body = personalized_body.replace("\n", "<br>")
+    signature = email_content['signature'].replace("\n", "<br>")
     rows_html = group[
         [columns_info['product_col'], columns_info['quantity_col'], columns_info['due_date_col']]
     ].to_html(index=False, border=1)
-    # Add two extra line breaks before the HTML table and before the signature, preserving formatting.
-    full_body = f"{personalized_body}\n\n\n\n{rows_html}\n\n\n\n{email_content['signature']}"
+    # Add two extra HTML line breaks (<br><br>) before the HTML table and before the signature.
+    full_body = f"<html><body>{personalized_body}<br><br>{rows_html}<br><br>{signature}</body></html>"
     return email_content['subject'], full_body
 
 def send_email_smtp(vendor_email, subject, body, email_settings):
