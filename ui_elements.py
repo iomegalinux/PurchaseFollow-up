@@ -10,15 +10,21 @@ def select_excel_sheets(main_file, vendor_file):
     main_sheets = pd.ExcelFile(main_file).sheet_names
     vendor_sheets = pd.ExcelFile(vendor_file).sheet_names
     main_sheet = st.selectbox("Select sheet from main data file", main_sheets)
+    st.session_state["main_sheet"] = main_sheet
     vendor_sheet = st.selectbox("Select sheet from vendor info file", vendor_sheets)
+    st.session_state["vendor_sheet"] = vendor_sheet
     return main_sheet, vendor_sheet
 
 def column_mapping_section(df_columns, vendor_columns):
     st.subheader("Field Mapping")
     main_field = st.selectbox("Select main file key for mapping 'Supplier No'", df_columns)
+    st.session_state["main_field"] = main_field
     vendor_field = st.selectbox("Select vendor file key for mapping 'Supplier No'", vendor_columns)
+    st.session_state["vendor_field"] = vendor_field
     email_col_merged = st.selectbox("Select email column from merged data", df_columns)
+    st.session_state["email_col_merged"] = email_col_merged
     delivery_date_col = st.selectbox("Select delivery date column", df_columns)
+    st.session_state["delivery_date_col"] = delivery_date_col
     if main_field and vendor_field and email_col_merged and delivery_date_col:
          mapping_main = {main_field: "Supplier No"}
          mapping_vendor = {vendor_field: "Supplier No"}
@@ -34,6 +40,7 @@ def column_mapping_section(df_columns, vendor_columns):
 def email_settings_section():
     st.subheader("Email Settings")
     method = st.selectbox("Select email sending method", ['SMTP', 'API'])
+    st.session_state["email_method"] = method
     if method == 'SMTP':
          server = st.text_input("SMTP Server", value="smtp.example.com")
          port = st.number_input("SMTP Port", value=587)
