@@ -12,6 +12,16 @@ from ui_elements import (
     email_content_section
 )
 
+def display_data(df):
+    grid_options = GridOptionsBuilder.from_dataframe(df)
+    grid_options.configure_selection('multiple', use_checkbox=True)
+    grid_options = grid_options.build()
+
+    grid_response = AgGrid(df, gridOptions=grid_options, enable_enterprise_modules=True)
+    if grid_response.get('selected_rows'):
+         return pd.DataFrame(grid_response['selected_rows'])
+    return df
+
 def main():
     st.set_page_config(layout="wide")
     st.title('Back Order Follow-up')
